@@ -17,12 +17,12 @@ class CameraViewController: UIViewController, UIImagePickerControllerDelegate,
 	@IBOutlet weak var imageView: UIImageView!
 	@IBOutlet weak var commentField: UITextField!
 
-	var refreshcontrol: UIRefreshControl!
+	var refreshControl: UIRefreshControl!
 
 	override func viewDidLoad() {
         super.viewDidLoad()
-		refreshcontrol = UIRefreshControl()
-		refreshcontrol.addTarget(self, action: #selector(onRefresh), for: .valueChanged)
+		refreshControl = UIRefreshControl()
+		refreshControl.addTarget(self, action: #selector(onRefresh), for: .valueChanged)
 		
         // Do any additional setup after loading the view.
     }
