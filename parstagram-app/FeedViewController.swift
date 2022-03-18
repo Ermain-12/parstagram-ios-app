@@ -10,7 +10,7 @@ import Parse
 import AlamofireImage
 import MessageInputBar
 
-class FeedViewController: UIViewController {
+class FeedViewController: UIViewController, MessageInputBarDelegate {
 
 	@IBOutlet weak var tableView: UITableView!
 	let commentBar = MessageInputBar()
@@ -20,10 +20,17 @@ class FeedViewController: UIViewController {
 	
 	override func viewDidLoad() {
         super.viewDidLoad()
+		commentBar.inputTextView.placeholder = "Add a comment...."
+		commentBar.sendButton.title = "Post"
+		commentBar.delegate = self
 		tableView.dataSource = self
 		tableView.delegate = self
 		tableView.keyboardDismissMode = .interactive
         // Do any additional setup after loading the view.
+
+		let center = NotificationCenter.default
+		center.addObserver(self, selector: #selector(keyboardWillBeHidden(note:)),
+				name: UIResponder.keyboardWillHideNotification, object: nil)
     }
 
 	override var inputAccessoryView: UIView? {
@@ -45,8 +52,24 @@ class FeedViewController: UIViewController {
 				self.posts = posts!
 				self.tableView.reloadData()
 			}
-			
 		}
+	}
+
+	func messageInputBar(_ inputBar: MessageInputBar, didPressSendButtonWith text: String) {
+		// Create the comment
+
+
+		// Clear an dismiss the input bar
+		commentBar.inputTextView.text = nil
+		showCommentBar = false
+		becomeFirstResponder()
+		commentBar.inputTextView.resignFirstResponder()
+	}
+
+	@objc func keyboardWillBeHidden(note: Notification) {
+		commentBar.inputTextView.text = nil
+		showCommentBar = false
+		becomeFirstResponder()
 	}
 	
 	@IBAction func onLogOut(_ sender: Any) {
@@ -57,18 +80,6 @@ class FeedViewController: UIViewController {
 		let delegate = UIApplication.shared.delegate as! AppDelegate
 		delegate.window?.rootViewController = loginViewController
 	}
-	
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
 
 extension FeedViewController: UITableViewDataSource, UITableViewDelegate {
@@ -87,7 +98,7 @@ extension FeedViewController: UITableViewDataSource, UITableViewDelegate {
 			let url = URL(string: urlString)!
 			cell.photoView.af.setImage(withURL: url)
 			return cell
-		} else {
+		} else if indexPath.row <= comments.count {
 			let cell = tableView.dequeueReusableCell(withIdentifier: "CommentCell") as! CommentCell
 
 			let comment = comments[indexPath.row - 1]
@@ -96,6 +107,10 @@ extension FeedViewController: UITableViewDataSource, UITableViewDelegate {
 			let user = comment["author"] as! PFUser
 			cell.nameLabel.text = user.username
 			return cell
+		} else {
+			let cell = tableView.dequeueReusableCell(withIdentifier: "AddCommentCell")!
+
+			return cell
 		}
 	}
 	
@@ -103,7 +118,7 @@ extension FeedViewController: UITableViewDataSource, UITableViewDelegate {
 		let post = posts[section]
 		let comments = (post["comments"] as? [PFObject]) ?? []
 
-		return comments.count + 1
+		return comments.count + 2
 	}
 
 	public func numberOfSections(in tableView: UITableView) -> Int {
@@ -113,17 +128,12 @@ extension FeedViewController: UITableViewDataSource, UITableViewDelegate {
 	public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 		let post = posts[indexPath.row]
 		let comment = PFObject(className: "Comments")
-		comment["text"] = "Random comment"
-		comment["post"] = post
-		comment["author"] = PFUser.current()
+		let comments = (post["comments"] as? [PFObject]) ?? []
 
-		post.add(comment, forKey: "comments")
-		post.saveInBackground{ (success, error) in
-			if success {
-				print("Comment saved")
-			} else {
-				print("Error saving comment")
-			}
+		if indexPath.row == comments.count + 1 {
+			showCommentBar = true
+			self.becomeFirstResponder()
+			commentBar.inputTextView.becomeFirstResponder()
 		}
 	}
 }
